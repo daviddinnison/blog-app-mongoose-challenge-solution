@@ -146,12 +146,68 @@ describe('Our blog app tests', function() {
                     // console.log('that was the response body');
                     //res.body.should.have.length.of(10);//this is the error, it says that it isnt a function
 
+                });
+        });
+    });
+
+        it('should return blog posts with the correct keys', function (){
+            let resBlog;
+            return chai.request(app)
+                .get('/posts')
+                .then(function(res){
+                    res.should.have.status(200);
+                    res.should.be.json;
+                    res.body.should.be.a('array');
+
+                    res.body.forEach(function(blogPost){
+                        blogPost.should.be.a('object');
+                        blogPost.should.include.keys(
+                            'id', 'author', 'content', 'title', 'created')
+                    });
+                    resBlog = res.body[0];
+                    return BlogPost.findById(resBlog.id)
                 })
-        })
-    })
+                .then(function(blog){
+                    resBlog.id.should.equal(blog.id);
+                    resBlog.title.should.equal(blog.title);
+                    resBlog.author.should.contain(blog.author.firstName);
+                    resBlog.author.should.contain(blog.author.lastName);
+                    resBlog.content.should.equal(blog.content);
+                })
+
+
+        });
 
     //------POST
+    describe('POST requests', function() {
+        it ('should add a new blog post', function() {
 
+            const newBlogPost = generateBlogData();
+
+            return chai.request(app)
+                .post('/posts')
+                .send(newBlogPost)
+                .then(function(res){
+                    res.should.have.status(201);
+                    res.should.be.json;
+                    res.body.should.be.a('object');
+                    res.body.should.include.keys(
+                        'id', 'author', 'content', 'title', 'created');
+                    res.body.title.should.equal(newBlogPost.title);
+                    res.body.id.should.not.be.null;
+                    res.body.created.should.not.be.null;
+                    res.body.content.should.equal(newBlogPost.content);
+
+                    return BlogPost.findById(res.body.id);
+                })
+                .then(function(blog){
+                    blog.title.should.equal(newBlogPost.title);
+                    blog.author.firstName.should.equal(newBlogPost.author.firstName);
+                    blog.author.lastName.should.equal(newBlogPost.author.lastName);
+                    blog.content.should.equal(newBlogPost.content);
+                })
+        });
+    });
 
 
     //------POST
